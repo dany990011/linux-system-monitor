@@ -8,6 +8,7 @@
 #include <filesystem>
 #include <algorithm>
 #include <cctype>
+#include <iomanip>
 
 struct CpuStats
 {
@@ -154,15 +155,18 @@ int main(){
 
         std::cout << "System Monitor\n";
 
-        std::cout << "Total RAM: " << totalKb/(kilo*kilo) << " GB" << "\n";
-        std::cout << "Used RAM: " << (totalKb-availableKb)/(kilo*kilo) << " GB" << "\n";
-        std::cout << "Precentage: " << ((totalKb-availableKb)*hundred/totalKb) << "%" << "\n";
+        std::cout << std::setw(10) <<  std::left << std::fixed << std::setprecision(2) << "CPU Usage: " << cpuUsage <<  "%\n";
 
-        std::cout << "CPU Usage: " << cpuUsage << "%\n";
-
+        std::cout << "RAM Usage: " << (totalKb-availableKb)/(kilo*kilo) << " GB / " 
+        << totalKb/(kilo*kilo) << " GB (" 
+        << ((totalKb-availableKb)*hundred/totalKb) 
+        << "%)" << "\n";
+        //std::cout << "Precentage: " << ((totalKb-availableKb)*hundred/totalKb) << "%)" << "\n";
+        
+        std::cout << std::setw(10) << std::left << "\nPID" << std::setw(25) <<  "NAME" << std::setw(10) << "MEMORY (MB)\n";
         for (size_t i = 0; i < maxProcesses; i++)
         {
-            std::cout << processes[i].pid <<  "  " << processes[i].name << "  " << processes[i].memoryKb/1024.0 <<"MB\n";
+            std::cout << std::setw(10) << processes[i].pid << std::setw(20) << processes[i].name << std::setw(10) << processes[i].memoryKb/1024.0 <<"MB\n";
         }
 
     }
