@@ -19,6 +19,8 @@ struct ProcessInfo{
     int pid;
     std::string name;
     long long memoryKb;
+    long long cpuTicks = 0;
+    double cpuPercent = 0.0;
 };
 
 CpuStats readCpuStatus(){
@@ -57,6 +59,34 @@ CpuStats readCpuStatus(){
     return measurement;
 }
 
+int findProcessCpuTicks(int processId){
+    std::string processStatString, subString, valueString;
+    int totalTicks = 0;
+    int pos = 2;
+    int desiredPos1 = 14, desiredPos2 = 15;
+    std::ifstream processStat("/proc/" + std::to_string(processId) + "/stat");
+    while(std::getline(processStat, subString, ')')){
+
+    }
+    std::istringstream stream(subString);
+    while(std::getline(stream, valueString, ' ')){
+        //std::cout << "LOOP TEST - POS IS: " <<  pos << " VALUE IS: " << valueString <<"\n";
+        if(pos == desiredPos1){
+            totalTicks += std::stoi(valueString);
+        }else if(pos == desiredPos2){
+            totalTicks += std::stoi(valueString);
+            break;
+        }
+        pos++;
+    }
+    return totalTicks;
+    //std::getline(processStat, processStatString);
+    //subString = processStatString.substr(processStatString.find(")")+1, processStatString.length()-1);
+    //while(std::getline(subString, valueString, ' '){
+    //    
+    //})
+}
+
 std::vector<ProcessInfo> readProcesses() {
     std::string dirName;
     std::string line;
@@ -88,9 +118,9 @@ std::vector<ProcessInfo> readProcesses() {
 }
 
 int main(){
-
-    double kilo = 1024;
-    double hundred = 100;
+    
+    static double kilo = 1024;
+    static double hundred = 100;
     int maxProcesses = 5;
 
     while (true){
@@ -107,8 +137,8 @@ int main(){
         std::string label;
         long long value;
         std::string unit;
-        long long totalKb = 0;
-        long long availableKb = 0;
+        long long totalKb;
+        long long availableKb;
 
         std::vector<ProcessInfo> processes;
         while (std::getline(file, line))
@@ -129,21 +159,37 @@ int main(){
 
         CpuStats measurement1, measurement2; 
         long long totalDIff, idleDiff;
-        double cpuUsage;
+        double cpuUsage, cpuUsagePercent;
 
         measurement1 = readCpuStatus();
+        processes = readProcesses();
+
+        for (auto &p : processes)
+        {
+            p.cpuTicks = findProcessCpuTicks(p.pid);
+            //std::cout << "TEST BEFORE : " << p.cpuTicks << "\n";
+        }
+
 
         std::this_thread::sleep_for(std::chrono::seconds(1));
 
-        measurement2 = readCpuStatus();
 
+        measurement2 = readCpuStatus();
         totalDIff = measurement2.total - measurement1.total;
         idleDiff = measurement2.idle - measurement1.idle;
-        cpuUsage = ((totalDIff - idleDiff)*1.0 / totalDIff) * hundred;
+        cpuUsage = ((totalDIff - idleDiff)*1.0) / totalDIff * hundred;
+
+        for (auto &p : processes)
+        {
+            p.cpuTicks = findProcessCpuTicks(p.pid) - p.cpuTicks;
+            p.cpuPercent = (p.cpuTicks*1.0 / totalDIff) * hundred * 16; //16 logical cores
+        }
+
+        std::sort(processes.begin(),processes.end(),[](const ProcessInfo& a,const ProcessInfo& b) {
+            return a.cpuPercent > b.cpuPercent;
+        });
 
         //Processes
-
-        processes = readProcesses();
 
         if(processes.size() < maxProcesses){
             maxProcesses = processes.size();
@@ -153,7 +199,7 @@ int main(){
 
         std::cout << "\033[2J\033[H"; //clear
 
-        std::cout << "System Monitor\n";
+        std::cout << "System Monitor\n\n";
 
         std::cout << std::setw(10) <<  std::left << std::fixed << std::setprecision(2) << "CPU Usage: " << cpuUsage <<  "%\n";
 
@@ -163,10 +209,10 @@ int main(){
         << "%)" << "\n";
         //std::cout << "Precentage: " << ((totalKb-availableKb)*hundred/totalKb) << "%)" << "\n";
         
-        std::cout << std::setw(10) << std::left << "\nPID" << std::setw(25) <<  "NAME" << std::setw(10) << "MEMORY (MB)\n";
+        std::cout << "\n" << std::setw(10) << std::left << "PID" << std::setw(20) <<  "NAME" << std::setw(14) << "MEMORY (MB)" <<  std::setw(10) << "CPU (%)" << "\n";
         for (size_t i = 0; i < maxProcesses; i++)
         {
-            std::cout << std::setw(10) << processes[i].pid << std::setw(20) << processes[i].name << std::setw(10) << processes[i].memoryKb/1024.0 <<"MB\n";
+            std::cout << std::left << std::setw(10) << processes[i].pid << std::setw(20) << processes[i].name << std::setw(14) << processes[i].memoryKb/1024.0  << std::setw(10) << processes[i].cpuPercent << "\n";
         }
 
     }
