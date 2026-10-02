@@ -9,6 +9,9 @@
 #include <algorithm>
 #include <cctype>
 #include <iomanip>
+#include <termios.h>
+#include <unistd.h>
+#include <cstdlib>
 
 struct CpuStats
 {
@@ -43,7 +46,7 @@ CpuStats readCpuStatus(){
 
     if(!file_stat){
         std::cout << "ERROR\n";
-        exit;
+        std::exit(EXIT_FAILURE);
     }
 
     std::getline(file_stat, line);
@@ -59,22 +62,24 @@ CpuStats readCpuStatus(){
     return measurement;
 }
 
-int findProcessCpuTicks(int processId){
-    std::string processStatString, subString, valueString;
-    int totalTicks = 0;
+long long findProcessCpuTicks(int processId){
+    std::string subString, valueString;
+    long long totalTicks = 0;
     int pos = 2;
     int desiredPos1 = 14, desiredPos2 = 15;
     std::ifstream processStat("/proc/" + std::to_string(processId) + "/stat");
+    if (!processStat.is_open()){
+        return -1;
+    }
     while(std::getline(processStat, subString, ')')){
 
     }
     std::istringstream stream(subString);
     while(std::getline(stream, valueString, ' ')){
-        //std::cout << "LOOP TEST - POS IS: " <<  pos << " VALUE IS: " << valueString <<"\n";
         if(pos == desiredPos1){
-            totalTicks += std::stoi(valueString);
+            totalTicks += std::stoll(valueString);
         }else if(pos == desiredPos2){
-            totalTicks += std::stoi(valueString);
+            totalTicks += std::stoll(valueString);
             break;
         }
         pos++;
@@ -110,20 +115,32 @@ std::vector<ProcessInfo> readProcesses() {
             processes.push_back(tempProcessObj);
         }
     }
-    std::sort(processes.begin(),processes.end(),[](const ProcessInfo& a,const ProcessInfo& b) {
-        return a.memoryKb > b.memoryKb;
-    });
 
     return processes;
 }
 
 int main(){
     
+    bool running = true;
     static double kilo = 1024;
     static double hundred = 100;
     int maxProcesses = 5;
+    char sortChoice = 'c', key;
+    long logicalCpus = sysconf(_SC_NPROCESSORS_ONLN);
 
-    while (true){
+    termios oldSettings;
+    termios newSettings;
+
+    tcgetattr(STDIN_FILENO, &oldSettings);
+
+    newSettings = oldSettings;
+    newSettings.c_lflag &= ~(ICANON | ECHO);
+    newSettings.c_cc[VMIN] = 0;
+    newSettings.c_cc[VTIME] = 0;
+
+    tcsetattr(STDIN_FILENO, TCSANOW, &newSettings);
+
+    while (running){
 
         //RAM
         
@@ -133,14 +150,28 @@ int main(){
             std::cout << "ERROR\n";
             return -1;    
         }
-        std::string line, line2;
+        std::string line;
         std::string label;
         long long value;
         std::string unit;
-        long long totalKb;
-        long long availableKb;
+        long long totalKb = 0;
+        long long availableKb = 0;
 
         std::vector<ProcessInfo> processes;
+
+        if(read(STDIN_FILENO, &key, 1) > 0 ){
+            if (key == 'q'){
+                running = false;
+                break;
+            }else{
+                if (key == 'm' || key == 'c'){
+                    sortChoice = key;
+                }
+                
+            }
+        }
+
+
         while (std::getline(file, line))
         {
             if(line.find("MemTotal") == 0){
@@ -159,7 +190,7 @@ int main(){
 
         CpuStats measurement1, measurement2; 
         long long totalDIff, idleDiff;
-        double cpuUsage, cpuUsagePercent;
+        double cpuUsage;
 
         measurement1 = readCpuStatus();
         processes = readProcesses();
@@ -182,11 +213,17 @@ int main(){
         for (auto &p : processes)
         {
             p.cpuTicks = findProcessCpuTicks(p.pid) - p.cpuTicks;
-            p.cpuPercent = (p.cpuTicks*1.0 / totalDIff) * hundred * 16; //16 logical cores
+            p.cpuPercent = (p.cpuTicks*1.0 / totalDIff) * hundred * logicalCpus; //16 logical cores usually
         }
 
-        std::sort(processes.begin(),processes.end(),[](const ProcessInfo& a,const ProcessInfo& b) {
-            return a.cpuPercent > b.cpuPercent;
+
+        std::sort(processes.begin(),processes.end(),[sortChoice](const ProcessInfo& a,const ProcessInfo& b) { //captures 'sortChoise' from outside lambda scope and saves it for use in lambda. 
+            if (sortChoice == 'm'){
+                return a.memoryKb > b.memoryKb;
+            }else{
+                return a.cpuPercent > b.cpuPercent;
+            }
+            
         });
 
         //Processes
@@ -208,14 +245,28 @@ int main(){
         << ((totalKb-availableKb)*hundred/totalKb) 
         << "%)" << "\n";
         //std::cout << "Precentage: " << ((totalKb-availableKb)*hundred/totalKb) << "%)" << "\n";
+
+        std::cout << "Sorted by - " << [sortChoice](){if (sortChoice == 'm')return "Memory"; else return "CPU";}() << "\n\n";  //no need for lamda here ,its jsut for fun
         
         std::cout << "\n" << std::setw(10) << std::left << "PID" << std::setw(20) <<  "NAME" << std::setw(14) << "MEMORY (MB)" <<  std::setw(10) << "CPU (%)" << "\n";
         for (size_t i = 0; i < maxProcesses; i++)
         {
-            std::cout << std::left << std::setw(10) << processes[i].pid << std::setw(20) << processes[i].name << std::setw(14) << processes[i].memoryKb/1024.0  << std::setw(10) << processes[i].cpuPercent << "\n";
+            std::cout << std::left << std::setw(10) << processes[i].pid << std::setw(20) << processes[i].name << std::setw(14) << processes[i].memoryKb/1024.0  << std::setw(10); 
+            if(processes[i].cpuPercent < 0){
+                std::cout << "DEAD";
+            }else{
+                std::cout << processes[i].cpuPercent;
+            } 
+            std::cout << "\n";
         }
 
+        std::cout << "\n\nsort by CPU (c) or memory (m)" << std::flush;
+
     }
+
+    tcsetattr(STDIN_FILENO, TCSANOW, &oldSettings);
+    std::cout << "EXITING...\n ";
+    std::this_thread::sleep_for(std::chrono::seconds(1));
 
     return 0;
 }
