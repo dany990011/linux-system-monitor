@@ -10,6 +10,9 @@ add_executable(monitor
     src/CpuMonitor.cpp
     src/ProcessMonitor.cpp
     src/MemoryMonitor.cpp
+    src/Terminal.cpp
+    src/Display.cpp
+    src/NetworkMonitor.cpp
 )
 
 target_include_directories(monitor PRIVATE include)
