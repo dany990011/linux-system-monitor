@@ -4,7 +4,8 @@
 #include "SortMode.hpp"
 #include "ProcessMonitor.hpp"
 #include "NetworkMonitor.hpp"
+#include "SystemSnapshot.hpp"
 #include <vector>
 #include <cstddef>
 
-void printMoinitor(double cpuUsage, MemoryStats memory, SortMode sortMode, size_t displayCount, std::vector<ProcessInfo> processes, NetworkStats network);
+void printMoinitor(SystemSnapshot snapshot, SortMode sortMode, size_t displayCount);

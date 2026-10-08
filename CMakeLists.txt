@@ -13,6 +13,8 @@ add_executable(monitor
     src/Terminal.cpp
     src/Display.cpp
     src/NetworkMonitor.cpp
+    src/TcpServer.cpp
+    src/serializer.cpp
 )
 
 target_include_directories(monitor PRIVATE include)

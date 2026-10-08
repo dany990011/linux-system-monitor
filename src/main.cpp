@@ -12,6 +12,7 @@
 #include <termios.h>
 #include <unistd.h>
 #include <cstdlib>
+#include <mutex>
 
 #include "CpuMonitor.hpp"
 #include "ProcessMonitor.hpp"
@@ -20,18 +21,30 @@
 #include "Display.hpp"
 #include "SortMode.hpp"
 #include "NetworkMonitor.hpp"
+#include "SystemSnapshot.hpp"
+#include "TcpServer.hpp"
+
 
 
 int main(){
     
     bool running = true;
-    const size_t maxProcesses = 5;
+    const size_t maxProcesses = 10;
     char sortChoice = 'c', key;
     long logicalCpus = sysconf(_SC_NPROCESSORS_ONLN);
     const double hundred = 100;
     Terminal terminal;
     SortMode sortMode;
+    SystemSnapshot snapshot;
 
+    //int clientId = startServer();
+    std::mutex snapshotMutex;
+    std::thread serverThread(runServer, std::ref(snapshot), std::ref(snapshotMutex));
+
+    // if (clientId == -1)
+    // {
+    //     return 1;
+    // }
 
     while (running){
 
@@ -52,6 +65,8 @@ int main(){
                 sortMode = SortMode::Memory;
             }
         }
+
+
 
         //RAM
 
@@ -89,7 +104,6 @@ int main(){
         cpuUsage = ((totalDIff - idleDiff)*1.0) / totalDIff * hundred;
 
         
-
         for (auto &p : processes)
         {
             p.cpuTicks = findProcessCpuTicks(p.pid) - p.cpuTicks;
@@ -107,15 +121,26 @@ int main(){
             
         });
 
+
         size_t displayCount = std::min(maxProcesses, processes.size());
 
         network = readNetwork();
         network.recivedBytes -= temp.recivedBytes;
         network.sentBytes -= temp.sentBytes; 
 
+
+        {
+            std::lock_guard<std::mutex> lock(snapshotMutex);
+
+            snapshot.memory = memory;
+            snapshot.processes = processes;
+            snapshot.cpuUsage = cpuUsage;
+            snapshot.network = network;
+        }
+
         //Prints
 
-        printMoinitor(cpuUsage, memory, sortMode, displayCount, processes, network);
+        printMoinitor(snapshot, sortMode, displayCount);
 
     }
 
