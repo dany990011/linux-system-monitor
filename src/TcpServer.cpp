@@ -18,9 +18,9 @@ void runServer(SystemSnapshot& snapshot, std::mutex& snapshotMutex){
     }
 
     int socketId, clientId;
-    sockaddr_in serverAddr{}, clientAdrr{};
-    socklen_t clientAdrrSize = sizeof(clientAdrr);
-    std::string serverMessage = "message from server";
+    sockaddr_in serverAddr{}, clientAddr{};
+    socklen_t clientAdrrSize = sizeof(clientAddr);
+    std::string serverMessage = "message from server\n";
     std::string serverSnapshot;
     ssize_t sendReturnMsg;
 
@@ -38,8 +38,8 @@ void runServer(SystemSnapshot& snapshot, std::mutex& snapshotMutex){
         //return -1;
     }
     while (true){
-        clientAdrrSize = sizeof(clientAdrr);
-        if((clientId = accept(socketId,reinterpret_cast<sockaddr*>(&clientAdrr),&clientAdrrSize)) == -1){
+        clientAdrrSize = sizeof(clientAddr);
+        if((clientId = accept(socketId,reinterpret_cast<sockaddr*>(&clientAddr),&clientAdrrSize)) == -1){
         //return -1;
         }else{
             sendReturnMsg = send(clientId, serverMessage.data(), serverMessage.size(), 0);
