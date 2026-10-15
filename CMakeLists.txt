@@ -20,6 +20,7 @@ add_executable(monitor
 add_executable(client_monitor
     src/client.cpp
     src/serializer.cpp
+    src/Display.cpp
 )
 
 target_include_directories(monitor PRIVATE include)

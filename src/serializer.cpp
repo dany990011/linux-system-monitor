@@ -10,7 +10,7 @@ std::string stringSerializeSnapshot(SystemSnapshot snapshot){
     out 
     << "CPU " << snapshot.cpuUsage << "\n" 
     << "RAM_TOTAL " << snapshot.memory.totalKb << "\n"
-    << "RAM_AVAILABLE" << snapshot.memory.availableKb << "\n"
+    << "RAM_AVAILABLE " << snapshot.memory.availableKb << "\n"
     << "DOWNLOAD " << snapshot.network.recivedBytes << "\n"
     << "UPLOAD " << snapshot.network.sentBytes << "\n";
 

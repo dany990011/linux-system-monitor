@@ -3,3 +3,5 @@
 
 
 std::string stringSerializeSnapshot(SystemSnapshot snapshot);
+
+SystemSnapshot deSerializeSnapshot(const std::string& data);
