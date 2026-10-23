@@ -8,4 +8,4 @@
 #include <vector>
 #include <cstddef>
 
-void printMoinitor(SystemSnapshot snapshot, SortMode sortMode, size_t displayCount);
+void printMoinitor(SystemSnapshot snapshot, SortMode sortMode, size_t displayCount, std::string message);

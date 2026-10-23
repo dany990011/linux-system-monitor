@@ -6,10 +6,10 @@
 const double kilo = 1024;
 const double hundred = 100;
 
-void printMoinitor(SystemSnapshot snapshot, SortMode sortMode, size_t displayCount){
+void printMoinitor(SystemSnapshot snapshot, SortMode sortMode, size_t displayCount, std::string msg){
     std::cout << "\033[2J\033[H"; //clear
 
-    std::cout << "System Monitor\n\n";
+    std::cout << msg << "\n\n";
 
     std::cout << std::setw(10) <<  std::left << std::fixed << std::setprecision(2) << "CPU Usage: " << snapshot.cpuUsage <<  "%\n";
 

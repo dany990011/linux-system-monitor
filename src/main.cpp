@@ -39,7 +39,11 @@ int main(){
 
     //int clientId = startServer();
     std::mutex snapshotMutex;
-    std::thread serverThread(runServer, std::ref(snapshot), std::ref(snapshotMutex));
+    TcpServer server;
+    if(!server.startServer()){
+        return -1;
+    }
+    std::thread serverThread(&TcpServer::runServer, &server, std::ref(snapshot), std::ref(snapshotMutex));
 
     // if (clientId == -1)
     // {
@@ -140,10 +144,12 @@ int main(){
 
         //Prints
 
-        printMoinitor(snapshot, sortMode, displayCount);
+        printMoinitor(snapshot, sortMode, displayCount, "Server System Monitor");
 
     }
 
+    server.closeServer();
+    serverThread.join();
     std::cout << "\n-EXITING...\n ";
     std::this_thread::sleep_for(std::chrono::seconds(1));
 
