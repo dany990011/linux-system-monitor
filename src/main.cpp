@@ -36,19 +36,14 @@ int main(){
     Terminal terminal;
     SortMode sortMode;
     SystemSnapshot snapshot;
-
-    //int clientId = startServer();
     std::mutex snapshotMutex;
     TcpServer server;
+
     if(!server.startServer()){
         return -1;
     }
-    std::thread serverThread(&TcpServer::runServer, &server, std::ref(snapshot), std::ref(snapshotMutex));
 
-    // if (clientId == -1)
-    // {
-    //     return 1;
-    // }
+    std::thread serverThread(&TcpServer::runServer, &server, std::ref(snapshot), std::ref(snapshotMutex));
 
     while (running){
 
@@ -144,7 +139,7 @@ int main(){
 
         //Prints
 
-        printMoinitor(snapshot, sortMode, displayCount, "Server System Monitor");
+        printMoinitor(snapshot, sortMode, displayCount, "Server System Monitor", server.getConnectedClients());
 
     }
 

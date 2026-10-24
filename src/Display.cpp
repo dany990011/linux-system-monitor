@@ -6,10 +6,14 @@
 const double kilo = 1024;
 const double hundred = 100;
 
-void printMoinitor(SystemSnapshot snapshot, SortMode sortMode, size_t displayCount, std::string msg){
+void printMoinitor(SystemSnapshot snapshot, SortMode sortMode, size_t displayCount, std::string msg, int connectedClinentsNum){
     std::cout << "\033[2J\033[H"; //clear
 
-    std::cout << msg << "\n\n";
+    std::cout << msg << "\n";
+
+    if(connectedClinentsNum > -1){
+        std::cout << "Conneced Clients: " << connectedClinentsNum << "\n\n";
+    }
 
     std::cout << std::setw(10) <<  std::left << std::fixed << std::setprecision(2) << "CPU Usage: " << snapshot.cpuUsage <<  "%\n";
 
@@ -36,4 +40,8 @@ void printMoinitor(SystemSnapshot snapshot, SortMode sortMode, size_t displayCou
     }
 
     std::cout << "\n\nsort by CPU (c) or memory (m)" << std::flush;
+}
+
+void printMoinitor(SystemSnapshot snapshot, SortMode sortMode, size_t displayCount, std::string msg){
+    printMoinitor(snapshot, sortMode, displayCount, msg, -1);
 }

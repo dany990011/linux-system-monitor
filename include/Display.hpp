@@ -9,3 +9,5 @@
 #include <cstddef>
 
 void printMoinitor(SystemSnapshot snapshot, SortMode sortMode, size_t displayCount, std::string message);
+
+void printMoinitor(SystemSnapshot snapshot, SortMode sortMode, size_t displayCount, std::string message, int ConnectedClientsNum);
