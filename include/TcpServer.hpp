@@ -2,6 +2,7 @@
 
 #include <atomic>
 #include <thread>
+#include <poll.h>
 
 #include "SystemSnapshot.hpp"
 
@@ -12,6 +13,7 @@ class TcpServer{
         std::atomic<bool> running = true;
         std::vector<std::thread> clientThreads;
         std::vector<int> clientSockets;
+        std::vector<pollfd> sockets;
     public:
     bool startServer();
     void runServer(SystemSnapshot& snapshot, std::mutex& snapshotMutex);
